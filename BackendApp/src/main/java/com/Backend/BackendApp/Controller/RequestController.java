@@ -16,7 +16,7 @@ import java.util.List;
 public class RequestController {
     private final BackendService backendService;
 
-    @GetMapping
+    @PostMapping
     public ResponseEntity<ResponseSourcesDto> getSimilarCities(@RequestBody CityRelocationRequestDto cityRelocationRequestDto) {
         return backendService.getSimilarPlaces(cityRelocationRequestDto);
     }
