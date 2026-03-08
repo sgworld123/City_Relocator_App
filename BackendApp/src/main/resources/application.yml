@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: BackendApp
+
+  data:
+    mongodb:
+      uri: mongodb+srv://Shreyansh:Pass123@cluster0.hlz9zmj.mongodb.net/?appName=Cluster0
+      database: PlaceDetailsDatabase
+
+server:
+  port: 8050
+
+apiKeys:
+  GmapsApiKey: AIzaSyBOuMIeEmRq3Yehg7xggRz2eJEK6P7CmSc
+
+urls:
+  GmapsUrl: https://maps.googleapis.com/maps/api
