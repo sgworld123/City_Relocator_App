@@ -75,12 +75,11 @@ export default function recommendations() {
         console.log("Sending payload:", JSON.stringify(payload, null, 2));
 
         // 3️⃣ Send to backend
-        const response = await fetch("http://nami-hdya.onrender.com/api/recommend", {
+       const response = await fetch("https://city-relocator-app.onrender.com/api/relocate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
-
 
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -90,30 +89,20 @@ export default function recommendations() {
         console.log("📥 Raw response body:", text);
         const data = text ? JSON.parse(text) : null;
 
-        const extracted =
-          data?.results?.flatMap((item: any) =>
-            item.recommended_places_near_current_city.map((place: any) => ({
-              name: place.name,
-              rating: place.rating ?? 0,
-              address: place.address ?? "",
-              drivingDistanceKm: place.driving_distance_from_current_city_km ?? 0,
-              geminiSimilarity: place.similarity?.gemini_similarity ?? 0,
-              similarity_score: place.similarity?.similarity_score ?? 0,
-              distance_score: place.similarity?.distance_score ?? 0,
-              latitude: place.coordinates?.lat ?? 0,
-              longitude: place.coordinates?.lng ?? 0,
-              density_score: place.similarity?.density_score ?? 0,
-              resoning: place.similarity?.reasoning ?? {},
-              pros: place.similarity?.pros ?? [],
-              cons: place.similarity?.cons ?? [],
-            }))
-          ) ?? [];
+        const extracted = data?.results?.map((place: any) => ({
+            name: place.name,
+            type: place.type,
+            rating: place.rating ?? 0,
+            address: place.address ?? "",
+            latitude: place.coordinatesDto?.lat ?? 0,
+            longitude: place.coordinatesDto?.lng ?? 0,
+          })) ?? [];
 
-        if (extracted.length === 0) {
-          setError("No recommendations found. Please try again later.");
-        }
+          if (extracted.length === 0) {
+            setError("No recommendations found. Please try again later.");
+          }
 
-        setPlaces(extracted);
+          setPlaces(extracted);
       } catch (error: any) {
         console.error("Error:", error);
         // Show an alert so you can debug in production
@@ -149,79 +138,48 @@ export default function recommendations() {
 }
 
   return (
-    <FlatList
-      data={places}
-      keyExtractor={(_, index) => index.toString()}
-      contentContainerStyle={{ padding: 12 }}
-      renderItem={({ item }) => {
-        const similarity = getSimilarityPercentage(item);
+  <FlatList
+    data={places}
+    keyExtractor={(_, index) => index.toString()}
+    contentContainerStyle={{ padding: 12 }}
+    renderItem={({ item }) => (
+      <View style={styles.card}>
 
-        return (
-          <View style={styles.card}>
-            {/* IMAGE */}
-            {/* <Image source={{ uri: item.image }} style={styles.image} /> */}
+        {/* TYPE BADGE */}
+        <View style={styles.scoreBadge}>
+          <Text style={styles.scoreText}>{item.type}</Text>
+        </View>
 
-            {/* SCORE BADGE */}
-            <View style={[styles.scoreBadge, { backgroundColor: similarity > 75 ? '#16a34a' : similarity > 50 ? '#eab308' : '#dc2626' }]}>
-              <Text style={[styles.scoreText]}>
-                {similarity}%
-              </Text>
-            </View>
+        <View style={styles.content}>
+          <Text style={styles.title}>{item.name}</Text>
+          <Text style={styles.address}>{item.address}</Text>
 
-            {/* CONTENT */}
-            <View style={styles.content}>
-              <Text style={styles.title}>{item.name}</Text>
-
-              <Text style={styles.address}>{item.address}</Text>
-
-              <View style={styles.metaRow}>
-                <Text style={styles.rating}>Rating : {item.rating}⭐</Text>
-                <Text style={styles.distance}>Distance : {item.drivingDistanceKm} km</Text>
-              </View>
-
-              {/* PROS / CONS */}
-              <Text style={styles.prosConsText}>Pros and Cons</Text>
-              <View style={styles.tagRow}>
-                {item.pros.slice(0, 2).map((p: string, i: number) => (
-                  <View key={i} style={styles.proTag}>
-                    <Text style={styles.tagText}>{p}</Text>
-                  </View>
-                ))}
-                {item.cons.slice(0, 1).map((c: string, i: number) => (
-                  <View key={i} style={styles.conTag}>
-                    <Text style={styles.tagText}>{c}</Text>
-                  </View>
-                ))}
-              </View>
-              <View style={styles.finalRecommendation}>
-                <Text style={styles.finalRecommendationText}>
-                  Final AI Recommendation: {item.resoning}
-                </Text>
-              </View>
-
-              <TouchableOpacity
-                style={styles.button}
-                onPress={() => {
-                  router.push({
-                    pathname: '/',
-                    params: {
-                      mode: 'place',
-                      lat: String(item.latitude) || '19.075983',
-                      lng: String(item.longitude) || '72.877655',
-                      returnTo: '/recommendations',
-                    },
-                  });
-                }}
-              >
-                <Text style={styles.buttonText}>View on Map</Text>
-              </TouchableOpacity>
-            </View>
+          <View style={styles.metaRow}>
+            <Text style={styles.rating}>Rating: {item.rating} ⭐</Text>
           </View>
 
-        );
-      }}
-    />
-  );
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() => {
+              router.push({
+                pathname: '/',
+                params: {
+                  mode: 'place',
+                  lat: String(item.latitude),
+                  lng: String(item.longitude),
+                  returnTo: '/recommendations',
+                },
+              });
+            }}
+          >
+            <Text style={styles.buttonText}>View on Map</Text>
+          </TouchableOpacity>
+        </View>
+
+      </View>
+    )}
+  />
+);
 
 }
 
