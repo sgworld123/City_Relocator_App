@@ -18,6 +18,12 @@ public class RequestController {
 
     @PostMapping
     public ResponseEntity<ResponseSourcesDto> getSimilarCities(@RequestBody CityRelocationRequestDto cityRelocationRequestDto) {
+        if (cityRelocationRequestDto.getCurrent_city() == null ||
+                cityRelocationRequestDto.getCurrent_city().getCoordinates() == null ||
+                cityRelocationRequestDto.getSource_places() == null ||
+                cityRelocationRequestDto.getSource_places().isEmpty()) {
+            return ResponseEntity.badRequest().build();
+        }
         return backendService.getSimilarPlaces(cityRelocationRequestDto);
     }
 

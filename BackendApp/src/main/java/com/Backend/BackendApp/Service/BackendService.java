@@ -15,7 +15,6 @@ import reactor.core.publisher.Mono;
 
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -41,31 +40,37 @@ public class BackendService {
         // Single Redis check per type
         for (String placeType : uniquePlaceTypes) {
             String redisKey = "places:geo:" + placeType;
-            GeoResults<RedisGeoCommands.GeoLocation<Object>> results =
-                    redisTemplate.opsForGeo()
-                            .radius(redisKey,
-                                    new Circle(new Point(newCityLong, newCityLat),
-                                            new Distance(5, Metrics.KILOMETERS)));
+            try{
+                GeoResults<RedisGeoCommands.GeoLocation<Object>> results =
+                        redisTemplate.opsForGeo()
+                                .radius(redisKey,
+                                        new Circle(new Point(newCityLong, newCityLat),
+                                                new Distance(5, Metrics.KILOMETERS)));
 
-            if (results.getContent().isEmpty()) {
-                typesNotInCache.add(placeType); // needs Google API call
-            } else {
-                results.getContent().stream()
-                        .map(result -> (String) result.getContent().getName())
-                        .map(placeId -> placesRepository.findById(placeId).orElse(null))
-                        .filter(Objects::nonNull)
-                        .sorted(Comparator.comparingDouble(
-                                placeData -> placeData.getRating() == null ? 0.0 : -placeData.getRating() // descending
-                        ))
-                        .limit(5) // top 5 per type
-                        .map(placeData -> PlaceDetailsDto.builder()
-                                .name(placeData.getName())
-                                .type(placeData.getType())
-                                .rating(placeData.getRating())
-                                .address(placeData.getAddress())
-                                .coordinatesDto(placeData.getCoordinatesDto())
-                                .build())
-                        .forEach(similarPlaces::add);
+                if (results.getContent().isEmpty()) {
+                    typesNotInCache.add(placeType); // needs Google API call
+                } else {
+                    results.getContent().stream()
+                            .map(result -> (String) result.getContent().getName())
+                            .map(placeId -> placesRepository.findById(placeId).orElse(null))
+                            .filter(Objects::nonNull)
+                            .sorted(Comparator.comparingDouble(
+                                    placeData -> placeData.getRating() == null ? 0.0 : -placeData.getRating() // descending
+                            ))
+                            .limit(5) // top 5 per type
+                            .map(placeData -> PlaceDetailsDto.builder()
+                                    .name(placeData.getName())
+                                    .type(placeData.getType())
+                                    .rating(placeData.getRating())
+                                    .address(placeData.getAddress())
+                                    .coordinatesDto(placeData.getCoordinatesDto())
+                                    .build())
+                            .forEach(similarPlaces::add);
+                }
+            }
+            catch (Exception e){
+                log.error("Error accessing Redis for type {}: {}", placeType, e.getMessage());
+                typesNotInCache.add(placeType); // fallback to Google API if Redis fails
             }
         }
 
