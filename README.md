@@ -4,7 +4,7 @@ A city relocation assistant that helps you find similar places in your new city 
 
 ## 📱 Download App
 
-[**Download Android APK**](https://expo.dev/accounts/shreyansh44/projects/MoveWise/builds/bb50916c-8f71-443c-a0d4-75078f0c5e72)
+[**Download Android APK**](https://expo.dev/accounts/shreyansh44/projects/MoveWise/builds/906c153a-9f74-4fe4-832a-de8d0ec49bb5)
 
 ---
 
