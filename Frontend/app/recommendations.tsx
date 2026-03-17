@@ -4,6 +4,47 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { StyleSheet } from "react-native";
 import { router } from "expo-router";
 
+// ─── Fallback dummy data (shown when server / GMaps API is unavailable) ────────
+const FALLBACK_DATA = {
+  results: [
+    {
+      name: "The Grand Spice Kitchen",
+      type: "restaurant",
+      rating: 4.5,
+      address: "12 Flavor Lane, Downtown",
+      coordinatesDto: { lat: 28.6139, lng: 77.209 },
+    },
+    {
+      name: "Zen Brew Cafe",
+      type: "cafe",
+      rating: 4.3,
+      address: "7 Brew Street, Midtown",
+      coordinatesDto: { lat: 28.617, lng: 77.212 },
+    },
+    {
+      name: "Urban Fitness Hub",
+      type: "gym",
+      rating: 4.7,
+      address: "99 Wellness Ave, Northside",
+      coordinatesDto: { lat: 28.621, lng: 77.205 },
+    },
+    {
+      name: "Central Park Market",
+      type: "grocery",
+      rating: 4.1,
+      address: "3 Market Square, West End",
+      coordinatesDto: { lat: 28.609, lng: 77.198 },
+    },
+    {
+      name: "Luminary Lounge",
+      type: "bar",
+      rating: 4.6,
+      address: "21 Night Row, East Quarter",
+      coordinatesDto: { lat: 28.615, lng: 77.22 },
+    },
+  ],
+};
+
 const getSimilarityPercentage = (item: any) => {
   // normalize all scores to 0–1 range
   const score =
@@ -24,6 +65,7 @@ export default function recommendations() {
   const [places, setPlaces] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [usedFallback, setUsedFallback] = useState(false);
 
   useEffect(() => {
     const prepareAndSendPayload = async () => {
@@ -74,20 +116,34 @@ export default function recommendations() {
 
         console.log("Sending payload:", JSON.stringify(payload, null, 2));
 
-        // 3️⃣ Send to backend
-       const response = await fetch("https://city-relocator-app.onrender.com/api/relocate", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+        // 3️⃣ Send to backend — retry once before falling back
+        let response: Response | null = null;
+        for (let attempt = 0; attempt < 2; attempt++) {
+          try {
+            const res = await fetch("https://city-relocator-app.onrender.com/api/relocate", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload),
+              signal: AbortSignal.timeout(8000),
+            });
+            if (res.ok) { response = res; break; }
+            console.warn(`Attempt ${attempt + 1}: HTTP ${res.status}`);
+          } catch (err) {
+            console.warn(`Attempt ${attempt + 1} failed:`, err);
+          }
         }
 
-        const text = await response.text();
-        console.log("📥 Raw response body:", text);
-        const data = text ? JSON.parse(text) : null;
+        // 4️⃣ If both attempts failed — serve fallback dummy data
+        let data: any;
+        if (!response?.ok) {
+          console.warn("Both attempts failed — using fallback data.");
+          setUsedFallback(true);
+          data = FALLBACK_DATA;
+        } else {
+          const text = await response.text();
+          console.log("📥 Raw response body:", text);
+          data = text ? JSON.parse(text) : null;
+        }
 
         const extracted = data?.results?.map((place: any) => ({
             name: place.name,
@@ -105,8 +161,6 @@ export default function recommendations() {
           setPlaces(extracted);
       } catch (error: any) {
         console.error("Error:", error);
-        // Show an alert so you can debug in production
-        alert(`Error fetching data: ${error.message}`);
         setError("Failed to load recommendations. Please try again.");
       }
       finally {
@@ -138,6 +192,18 @@ export default function recommendations() {
 }
 
   return (
+  <>
+    {usedFallback && (
+      <View style={styles.fallbackBanner}>
+        <Text style={styles.fallbackIcon}>⚠️</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.fallbackTitle}>Showing Sample Results</Text>
+          <Text style={styles.fallbackSub}>
+            Live data is unavailable (network timeout or Maps API issue). These are demonstration results only.
+          </Text>
+        </View>
+      </View>
+    )}
   <FlatList
     data={places}
     keyExtractor={(_, index) => index.toString()}
@@ -179,9 +245,8 @@ export default function recommendations() {
       </View>
     )}
   />
-);
-
-}
+  </>
+);}
 
 const styles = StyleSheet.create({
   card: {
@@ -301,6 +366,33 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#555',
     marginBottom: 8,
+  },
+  fallbackBanner: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+    margin: 12,
+    marginBottom: 0,
+    padding: 12,
+    backgroundColor: "#FFFBEB",
+    borderWidth: 1,
+    borderColor: "#FCD34D",
+    borderRadius: 10,
+  },
+  fallbackIcon: {
+    fontSize: 18,
+    marginTop: 1,
+  },
+  fallbackTitle: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#92400E",
+    marginBottom: 2,
+  },
+  fallbackSub: {
+    fontSize: 12,
+    color: "#B45309",
+    lineHeight: 17,
   },
   finalRecommendation: {
     marginTop: 10,

@@ -121,21 +121,29 @@ export default function SetLocationScreen() {
     });
   };
 
-  const handleConfirm = () => {
-  if (isPlaceMode) {
-    router.replace(returnTo || "/frequent-places");
-    return;
-  }
+  const handleConfirm = async () => {
+    // mode === "place": viewing a recommendation on map, just go back
+    if (isPlaceMode) {
+      router.replace(returnTo || "/frequent-places");
+      return;
+    }
 
-  // ✅ PICK MODE
-  router.replace({
-    pathname: returnTo || "/frequent-places",
-    params: {
-      latitude: String(region.latitude),
-      longitude: String(region.longitude),
-    },
-  });
-};
+    // mode === "pick": coming from frequent-places to pin a spot, pass coords back
+    if (mode === "pick") {
+      router.replace({
+        pathname: returnTo || "/frequent-places",
+        params: {
+          latitude: String(region.latitude),
+          longitude: String(region.longitude),
+        },
+      });
+      return;
+    }
+
+    // default (no mode): source-city selection — save previous_city then continue
+    await savePreviousCity();
+    router.push("/frequent-places");
+  };
 
 
 
