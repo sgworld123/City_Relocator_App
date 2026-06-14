@@ -215,8 +215,8 @@ MoveWise/
 - Never commit `application-dev.yml` with real credentials
 - MongoDB Atlas IP whitelisted to `0.0.0.0/0` for dynamic cloud IPs
 
-## 🙏 Thanks for Visiting
+## ⭐ Show Some Love
 
-This is a solo project, still evolving. If you liked what you saw, a star goes a long way and helps more people find it.
+Thanks for stopping by! If this project gave you even a little value, a star would mean the world 😽
 
-![Made with care](https://capsule-render.vercel.app/api?type=soft&color=0:f5f7fa,100:c3cfe2&height=100&section=footer&text=Made%20with%20%E2%9D%A4%EF%B8%8F&fontSize=24&fontColor=333333&animation=fadeIn)
+![cat kiss](https://media.giphy.com/media/ytu2GUYbvhz7zShGwS/giphy.gif)
